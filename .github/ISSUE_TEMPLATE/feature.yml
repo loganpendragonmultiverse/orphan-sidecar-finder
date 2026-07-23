@@ -1,0 +1,13 @@
+name: Feature request
+description: Propose a focused sidecar-matching improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes: { label: Problem, description: Which real sidecar convention is unsupported? }
+    validations: { required: true }
+  - type: textarea
+    id: safety
+    attributes: { label: Conservative behavior, description: Explain ambiguous cases and read-only handling. }
+    validations: { required: true }
