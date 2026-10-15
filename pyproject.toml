@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orphan-sidecar-finder"
-version = "1.0.0"
+version = "1.1.0"
 description = "Find sidecar files without matching primary files and primary files without expected sidecars."
 readme = "README.md"
 requires-python = ">=3.10"

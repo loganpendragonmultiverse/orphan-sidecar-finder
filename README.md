@@ -30,3 +30,8 @@ Version 1.0.0 is feature complete for conservative filename matching. Contributi
 ## More open-source projects
 
 This project is part of the [Logan Pendragon Forge open-source collection](https://www.loganpendragonforge.com/open-source/). Browse the catalog for other released tools, source repositories, live demos, and downloads.
+
+
+## 1.1.0 candidate
+
+Same-directory primary files with the same case-insensitive stem now remain separate candidates. A sidecar matching multiple candidates appears in `ambiguous_matches`; no primary is chosen and it is not counted as an orphan. Candidate primaries remain in `primaries_without_sidecars` until a unique sidecar match exists. The additive `explanations` field and Markdown report show the normalized base, recognized suffixes removed, and all candidates for every sidecar. Recognized language and role suffixes are unchanged; unfamiliar suffixes remain unmatched. Matching stays directory-local and filename-only.

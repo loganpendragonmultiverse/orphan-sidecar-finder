@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from orphan_sidecar_finder.cli import main, markdown
-from orphan_sidecar_finder.core import sidecar_base, scan
+from orphan_sidecar_finder.core import scan, sidecar_base
 
 
 def touch(path: Path) -> None:

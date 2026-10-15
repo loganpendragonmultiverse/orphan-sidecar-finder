@@ -17,6 +17,7 @@ def markdown(report: ScanReport) -> str:
         f"- Primary files: {report.primary_count}",
         f"- Sidecar files: {report.sidecar_count}",
         f"- Matched sidecars: {len(report.matches)}",
+        f"- Ambiguous sidecars: {len(report.ambiguous_matches)}",
         f"- Orphan sidecars: {len(report.orphan_sidecars)}",
         f"- Primaries without sidecars: {len(report.primaries_without_sidecars)}",
         "",
@@ -26,6 +27,17 @@ def markdown(report: ScanReport) -> str:
     lines.extend(f"- `{path}`" for path in report.orphan_sidecars)
     lines.extend(["", "## Primaries without sidecars", ""])
     lines.extend(f"- `{path}`" for path in report.primaries_without_sidecars)
+    lines.extend(["", "## Ambiguous matches", ""])
+    lines.extend(
+        f"- `{item.sidecar}`: {', '.join(item.candidates)}" for item in report.ambiguous_matches
+    )
+    lines.extend(["", "## Matching explanations", ""])
+    for item in report.explanations:
+        suffix = ", ".join(item.removed_suffixes) or "none"
+        candidates = ", ".join(item.candidates) or "none"
+        lines.append(
+            f"- `{item.sidecar}`: base `{item.normalized_base}`; removed suffixes: {suffix}; candidates: {candidates}"
+        )
     return "\n".join(lines) + "\n"
 
 
