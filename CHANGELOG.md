@@ -1,6 +1,10 @@
 # Changelog
 
-## 1.1.0 - Unreleased
+## 1.1.1 - 2026-10-16
+
+- Correct release wording and the original publication date; update installation references. Feature behavior is unchanged.
+
+## 1.1.0 - 2026-10-15
 
 - Retain ambiguous same-stem primary candidates and explain suffix matching.
 
