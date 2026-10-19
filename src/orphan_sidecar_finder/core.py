@@ -82,9 +82,16 @@ class ScanReport:
 
 def normalize_extensions(values: set[str] | frozenset[str]) -> frozenset[str]:
     """Normalize extension values to lowercase dotted forms."""
+    if any(not value.strip(".") or re.search(r"[\s/\\]", value) for value in values):
+        raise ValueError("extensions must be nonempty filename suffixes")
     return frozenset(
         value.casefold() if value.startswith(".") else f".{value.casefold()}" for value in values
     )
+
+
+def normalize_stem(stem: str) -> str:
+    """Use the same separator/case conventions for both sides of a match."""
+    return re.sub(r"[\s._-]+", " ", stem).strip().casefold()
 
 
 def sidecar_base(stem: str) -> str:
@@ -92,7 +99,7 @@ def sidecar_base(stem: str) -> str:
     parts = re.split(r"[._-]+", stem)
     while len(parts) > 1 and parts[-1].casefold() in SUFFIX_TOKENS:
         parts.pop()
-    return " ".join(parts).casefold()
+    return normalize_stem(" ".join(parts))
 
 
 def scan(
@@ -103,11 +110,16 @@ def scan(
     sidecar_extensions: set[str] | frozenset[str] = SIDECAR_EXTENSIONS,
 ) -> ScanReport:
     """Scan root without opening or modifying any discovered file."""
-    resolved = root.resolve()
+    try:
+        resolved = root.resolve()
+    except RuntimeError as exc:
+        raise ValueError("scan root contains a symlink loop") from exc
     if not resolved.is_dir():
         raise NotADirectoryError(str(root))
     primary_exts = normalize_extensions(primary_extensions)
     sidecar_exts = normalize_extensions(sidecar_extensions)
+    if primary_exts & sidecar_exts:
+        raise ValueError("primary and sidecar extensions must not overlap")
     paths = sorted(
         (resolved.rglob("*") if recursive else resolved.glob("*")),
         key=lambda item: (str(item).casefold(), str(item)),
@@ -117,7 +129,7 @@ def scan(
     sidecars = [path for path in files if path.suffix.casefold() in sidecar_exts]
     primary_index: dict[tuple[Path, str], list[Path]] = defaultdict(list)
     for path in primaries:
-        primary_index[(path.parent, path.stem.casefold())].append(path)
+        primary_index[(path.parent, normalize_stem(path.stem))].append(path)
     ambiguous: list[AmbiguousMatch] = []
     explanations: list[MatchExplanation] = []
     matches: list[Match] = []
@@ -129,7 +141,12 @@ def scan(
         suffixes: list[str] = []
         while len(parts) > 1 and parts[-1].casefold() in SUFFIX_TOKENS:
             suffixes.insert(0, parts.pop())
-        candidates = primary_index.get((sidecar.parent, base), [])
+        candidates = list(
+            dict.fromkeys(
+                primary_index.get((sidecar.parent, normalize_stem(sidecar.stem)), [])
+                + primary_index.get((sidecar.parent, base), [])
+            )
+        )
         names = tuple(path.relative_to(resolved).as_posix() for path in candidates)
         relative_sidecar = sidecar.relative_to(resolved).as_posix()
         explanations.append(MatchExplanation(relative_sidecar, base, tuple(suffixes), names))
