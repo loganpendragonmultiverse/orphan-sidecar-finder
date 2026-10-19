@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2 - 2026-10-19
+
+- Normalize separators and case on both sides without removing role tokens from primary titles. Consider both the complete sidecar stem and recognized-suffix-stripped stem; multiple candidates stay ambiguous.
+- Refuse overlapping or empty extension sets, preserve existing/racing report destinations, and render filenames literally in Markdown.
+
 ## 1.1.1 - 2026-10-16
 
 - Correct release wording and the original publication date; update installation references. Feature behavior is unchanged.

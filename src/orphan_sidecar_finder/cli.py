@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from orphan_sidecar_finder.core import PRIMARY_EXTENSIONS, SIDECAR_EXTENSIONS, ScanReport, scan
+
+from .markdown import literal
+from .output import validate_outputs, write_report, write_stdout
 
 
 def markdown(report: ScanReport) -> str:
@@ -24,19 +28,20 @@ def markdown(report: ScanReport) -> str:
         "## Orphan sidecars",
         "",
     ]
-    lines.extend(f"- `{path}`" for path in report.orphan_sidecars)
+    lines.extend(f"- {literal(path)}" for path in report.orphan_sidecars)
     lines.extend(["", "## Primaries without sidecars", ""])
-    lines.extend(f"- `{path}`" for path in report.primaries_without_sidecars)
+    lines.extend(f"- {literal(path)}" for path in report.primaries_without_sidecars)
     lines.extend(["", "## Ambiguous matches", ""])
     lines.extend(
-        f"- `{item.sidecar}`: {', '.join(item.candidates)}" for item in report.ambiguous_matches
+        f"- {literal(item.sidecar)}: {', '.join(map(literal, item.candidates))}"
+        for item in report.ambiguous_matches
     )
     lines.extend(["", "## Matching explanations", ""])
     for item in report.explanations:
-        suffix = ", ".join(item.removed_suffixes) or "none"
-        candidates = ", ".join(item.candidates) or "none"
+        suffix = ", ".join(map(literal, item.removed_suffixes)) or "none"
+        candidates = ", ".join(map(literal, item.candidates)) or "none"
         lines.append(
-            f"- `{item.sidecar}`: base `{item.normalized_base}`; removed suffixes: {suffix}; candidates: {candidates}"
+            f"- {literal(item.sidecar)}: base {literal(item.normalized_base)}; removed suffixes: {suffix}; candidates: {candidates}"
         )
     return "\n".join(lines) + "\n"
 
@@ -67,12 +72,17 @@ def main(argv: list[str] | None = None) -> int:
             primary_extensions=primary,
             sidecar_extensions=sidecars,
         )
-    except (OSError, ValueError) as error:
-        parser().error(str(error))
-    rendered = markdown(report)
-    if args.json_output:
-        args.json_output.write_text(json.dumps(report.to_dict(), indent=2) + "\n", encoding="utf-8")
-    if args.markdown_output:
-        args.markdown_output.write_text(rendered, encoding="utf-8")
-    print(rendered, end="")
+        rendered = markdown(report)
+        paths = [path for path in (args.json_output, args.markdown_output) if path]
+        validate_outputs(paths)
+        if args.json_output:
+            write_report(
+                args.json_output.expanduser(), json.dumps(report.to_dict(), indent=2) + "\n"
+            )
+        if args.markdown_output:
+            write_report(args.markdown_output.expanduser(), rendered)
+        write_stdout(rendered)
+    except (OSError, ValueError, UnicodeError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
     return 1 if report.orphan_sidecars else 0
